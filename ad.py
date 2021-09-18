@@ -10,10 +10,7 @@ async def check(ip):
     conn = asyncio.open_connection(ip, 80)
 
     try:
-        try:
-            reader, writer = await asyncio.wait_for(conn, timeout=1)
-        except asyncio.TimeoutError:
-            return False
+        reader, writer = await asyncio.wait_for(conn, timeout=1)
 
         writer.write((T % ip).encode('ascii'))
         await writer.drain()
@@ -23,11 +20,12 @@ async def check(ip):
         writer.close()
         await writer.wait_closed()
 
+        return b'Index of' in data
+    except (asyncio.TimeoutError, ConnectionError):
+        pass
+    finally:
         conn.close()
 
-        return b'Index of' in data
-    except ConnectionError:
-        pass
     return False
 
 
