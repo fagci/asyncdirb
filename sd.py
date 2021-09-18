@@ -24,7 +24,7 @@ def scan():
                     s.send((T % ip).encode('ascii'))
                     if b'Index of' in s.recv(1024):
                         print('[+]', ip)
-                except (ConnectionError, timeout, IndexError, ValueError):
+                except (ConnectionError, timeout):
                     pass
 
 
