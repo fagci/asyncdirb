@@ -11,21 +11,19 @@ T = 'GET /wp-content/uploads/ HTTP/1.1\r\nHost: %s\r\n\r\n'
 def scan():
     while running_event.is_set():
         ip_address = IPv4Address(randint(0x1000000, 0xE0000000))
-        if not ip_address.is_global:
-            continue
+        if ip_address.is_global:
+            ip = str(ip_address)
 
-        ip = str(ip_address)
+            with socket() as s:
+                s.setsockopt(IPPROTO_TCP, TCP_NODELAY, True)
 
-        with socket() as s:
-            s.setsockopt(IPPROTO_TCP, TCP_NODELAY, True)
-
-            if s.connect_ex((ip, 80)) == 0:
-                try:
-                    s.send((T % ip).encode('ascii'))
-                    if b'Index of' in s.recv(1024):
-                        print('[+]', ip)
-                except (ConnectionError, timeout):
-                    pass
+                if s.connect_ex((ip, 80)) == 0:
+                    try:
+                        s.send((T % ip).encode('ascii'))
+                        if b'Index of' in s.recv(1024):
+                            print('[+]', ip)
+                    except (ConnectionError, timeout):
+                        pass
 
 
 def main():
