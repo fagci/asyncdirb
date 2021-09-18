@@ -4,11 +4,10 @@ from random import randint
 from socket import IPPROTO_TCP, TCP_NODELAY, setdefaulttimeout, socket, timeout
 from threading import Event, Thread
 
-running_event = Event()
 T = 'GET /wp-content/uploads/ HTTP/1.1\r\nHost: %s\r\n\r\n'
 
 
-def scan():
+def scan(running_event):
     while running_event.is_set():
         ip_address = IPv4Address(randint(0x1000000, 0xE0000000))
         if ip_address.is_global:
@@ -28,12 +27,13 @@ def scan():
 
 def main():
     pool = []
+    running_event = Event()
     running_event.set()
 
     setdefaulttimeout(1)
 
     for _ in range(1024):
-        t = Thread(target=scan)
+        t = Thread(target=scan, args=(running_event, ))
         t.start()
         pool.append(t)
 
