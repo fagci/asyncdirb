@@ -5,33 +5,27 @@ from socket import IPPROTO_TCP, TCP_NODELAY, setdefaulttimeout, socket, timeout
 from threading import Event, Thread
 
 running_event = Event()
-
-
-def check(ip):
-    with socket() as s:
-        s.setsockopt(IPPROTO_TCP, TCP_NODELAY, True)
-
-        if s.connect_ex((ip, 80)) != 0:
-            return False
-
-        req = 'GET /wp-content/uploads/ HTTP/1.1\r\nHost: %s\r\n\r\n' % ip
-
-        try:
-            s.send(req.encode())
-            return b'Index of' in s.recv(1024)
-        except (ConnectionError, timeout, IndexError, ValueError):
-            pass
-
-    return False
+T = 'GET /wp-content/uploads/ HTTP/1.1\r\nHost: %s\r\n\r\n'
 
 
 def scan():
     while running_event.is_set():
         ip_address = IPv4Address(randint(0x1000000, 0xE0000000))
-        if ip_address.is_global:
-            ip = str(ip_address)
-            if check(ip):
-                print('[+]', ip)
+        if not ip_address.is_global:
+            continue
+
+        ip = str(ip_address)
+
+        with socket() as s:
+            s.setsockopt(IPPROTO_TCP, TCP_NODELAY, True)
+
+            if s.connect_ex((ip, 80)) == 0:
+                try:
+                    s.send((T % ip).encode('ascii'))
+                    if b'Index of' in s.recv(1024):
+                        print('[+]', ip)
+                except (ConnectionError, timeout, IndexError, ValueError):
+                    pass
 
 
 def main():
