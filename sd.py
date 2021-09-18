@@ -1,7 +1,13 @@
 #!/usr/bin/env python3
 from ipaddress import IPv4Address
 from random import randint
-from socket import socket, timeout as Timeout
+from socket import (
+    IPPROTO_TCP,
+    TCP_NODELAY,
+    setdefaulttimeout,
+    socket,
+    timeout as Timeout,
+)
 from threading import Thread
 
 T = ('GET %s HTTP/1.1\r\n' 'Host: %s\r\n' 'User-Agent: Mozilla/5.0\r\n' '\r\n')
@@ -9,7 +15,7 @@ T = ('GET %s HTTP/1.1\r\n' 'Host: %s\r\n' 'User-Agent: Mozilla/5.0\r\n' '\r\n')
 
 def get(ip, path):
     with socket() as s:
-        s.settimeout(1)
+        s.setsockopt(IPPROTO_TCP, TCP_NODELAY, True)
         try:
             if s.connect_ex((ip, 80)) != 0:
                 return 0, b''
@@ -19,7 +25,12 @@ def get(ip, path):
         except (ConnectionError, Timeout):
             return 0, b''
 
-    return int(data.splitlines()[0].split(None, 2)[1]), data
+    if not data:
+        return 0, b''
+
+    parts = data.splitlines()[0].split(None, 2)
+
+    return int(parts[1]) if len(parts) > 1 else 0, data
 
 
 def check(ip):
@@ -50,6 +61,9 @@ def scan():
 
 def main():
     pool = []
+
+    setdefaulttimeout(1)
+
     for _ in range(1024):
         t = Thread(target=scan)
         t.start()
