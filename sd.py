@@ -1,14 +1,10 @@
 #!/usr/bin/env python3
 from ipaddress import IPv4Address
 from random import randint
-from socket import (
-    IPPROTO_TCP,
-    TCP_NODELAY,
-    setdefaulttimeout,
-    socket,
-    timeout as Timeout,
-)
-from threading import Thread
+from socket import IPPROTO_TCP, TCP_NODELAY, setdefaulttimeout, socket, timeout
+from threading import Event, Thread
+
+running_event = Event()
 
 
 def check(ip):
@@ -26,16 +22,15 @@ def check(ip):
 
         try:
             s.send(req.encode())
-            data = s.recv(1024)
-            return b'Index of' in data
-        except (ConnectionError, Timeout, IndexError, ValueError):
+            return b'Index of' in s.recv(1024)
+        except (ConnectionError, timeout, IndexError, ValueError):
             pass
 
     return False
 
 
 def scan():
-    while True:
+    while running_event.is_set():
         ip_address = IPv4Address(randint(0x1000000, 0xE0000000))
         if ip_address.is_global:
             ip = str(ip_address)
@@ -45,6 +40,7 @@ def scan():
 
 def main():
     pool = []
+    running_event.set()
 
     setdefaulttimeout(1)
 
@@ -53,8 +49,12 @@ def main():
         t.start()
         pool.append(t)
 
-    for t in pool:
-        t.join()
+    try:
+        for t in pool:
+            t.join()
+    except KeyboardInterrupt:
+        running_event.clear()
+        print('\rInterrupt')
 
 
 if __name__ == '__main__':
