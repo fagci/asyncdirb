@@ -14,11 +14,7 @@ def check(ip):
         if s.connect_ex((ip, 80)) != 0:
             return False
 
-        req = ('GET /wp-content/uploads/ HTTP/1.1\r\n'
-               'Host: %s\r\n'
-               'Connection: close\r\n'
-               'User-Agent: Mozilla/5.0\r\n'
-               '\r\n') % ip
+        req = 'GET /wp-content/uploads/ HTTP/1.1\r\nHost: %s\r\n\r\n' % ip
 
         try:
             s.send(req.encode())
