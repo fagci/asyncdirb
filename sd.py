@@ -10,42 +10,26 @@ from socket import (
 )
 from threading import Thread
 
-T = ('GET %s HTTP/1.1\r\n' 'Host: %s\r\n' 'User-Agent: Mozilla/5.0\r\n' '\r\n')
-
-
-def get(ip, path):
-    with socket() as s:
-        s.setsockopt(IPPROTO_TCP, TCP_NODELAY, True)
-        try:
-            if s.connect_ex((ip, 80)) != 0:
-                return 0, b''
-
-            s.send((T % (path, ip)).encode())
-            data = s.recv(1024)
-        except (ConnectionError, Timeout):
-            return 0, b''
-
-    if not data:
-        return 0, b''
-
-    parts = data.splitlines()[0].split(None, 2)
-
-    return int(parts[1]) if len(parts) > 1 else 0, data
-
 
 def check(ip):
-    res, data = get(ip, '/qwerty')
-    if not res:
-        return False
-    if 200 <= res < 300:
-        print('SPA', flush=True)
-        return False
-    print('not SPA', flush=True)
+    with socket() as s:
+        s.setsockopt(IPPROTO_TCP, TCP_NODELAY, True)
 
-    res, data = get(ip, '/wp-content/uploads/')
+        if s.connect_ex((ip, 80)) != 0:
+            return False
 
-    if 200 <= res < 300 and b'Index of' in data:
-        return True
+        req = ('GET /wp-content/uploads/ HTTP/1.1\r\n'
+               'Host: %s\r\n'
+               'Connection: close\r\n'
+               'User-Agent: Mozilla/5.0\r\n'
+               '\r\n') % ip
+
+        try:
+            s.send(req.encode())
+            data = s.recv(1024)
+            return b'Index of' in data
+        except (ConnectionError, Timeout, IndexError, ValueError):
+            pass
 
     return False
 
