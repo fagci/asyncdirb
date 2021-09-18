@@ -1,34 +1,29 @@
 #!/usr/bin/env python3
-import asyncio
 from ipaddress import IPv4Address
 from random import randint
+from socket import socket, timeout as Timeout
+from threading import Thread
 
 T = ('GET %s HTTP/1.1\r\n' 'Host: %s\r\n' 'User-Agent: Mozilla/5.0\r\n' '\r\n')
 
 
-async def get(ip, path):
-    conn = asyncio.open_connection(ip, 80)
-
-    try:
+def get(ip, path):
+    with socket() as s:
+        s.settimeout(1)
         try:
-            reader, writer = await asyncio.wait_for(conn, timeout=1)
-        except asyncio.TimeoutError:
+            if s.connect_ex((ip, 80)) != 0:
+                return 0, b''
+
+            s.send((T % (path, ip)).encode())
+            data = s.recv(1024)
+        except (ConnectionError, Timeout):
             return 0, b''
-        writer.write((T % (path, ip)).encode())
-        await writer.drain()
-
-        data = await reader.read(1024)
-
-        writer.close()
-        await writer.wait_closed()
-    except ConnectionError:
-        return 0, b''
 
     return int(data.splitlines()[0].split(None, 2)[1]), data
 
 
-async def check(ip):
-    res, data = await get(ip, '/qwerty')
+def check(ip):
+    res, data = get(ip, '/qwerty')
     if not res:
         return False
     if 200 <= res < 300:
@@ -36,7 +31,7 @@ async def check(ip):
         return False
     print('not SPA', flush=True)
 
-    res, data = await get(ip, '/wp-content/uploads/')
+    res, data = get(ip, '/wp-content/uploads/')
 
     if 200 <= res < 300 and b'Index of' in data:
         return True
@@ -44,18 +39,25 @@ async def check(ip):
     return False
 
 
-async def scan():
+def scan():
     while True:
         ip_address = IPv4Address(randint(0x1000000, 0xE0000000))
         if ip_address.is_global:
             ip = str(ip_address)
-            if await check(ip):
+            if check(ip):
                 print('[+]', ip)
 
 
-async def main():
-    await asyncio.gather(asyncio.wait([scan() for _ in range(1024)]))
+def main():
+    pool = []
+    for _ in range(1024):
+        t = Thread(target=scan)
+        t.start()
+        pool.append(t)
+
+    for t in pool:
+        t.join()
 
 
 if __name__ == '__main__':
-    asyncio.run(main())
+    main()
