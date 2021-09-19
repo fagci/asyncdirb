@@ -16,13 +16,15 @@ def scan(running_event):
             with socket() as s:
                 s.setsockopt(IPPROTO_TCP, TCP_NODELAY, True)
 
-                if s.connect_ex((ip, 80)) == 0:
-                    try:
-                        s.send((T % ip).encode('ascii'))
-                        if b'Index of' in s.recv(1024):
-                            print('[+]', ip)
-                    except (ConnectionError, timeout):
-                        pass
+                if s.connect_ex((ip, 80)):
+                    continue
+
+                try:
+                    s.send((T % ip).encode('ascii'))
+                    if b'Index of' in s.recv(1024):
+                        print('[+]', ip)
+                except (ConnectionError, timeout):
+                    pass
 
 
 def main():
