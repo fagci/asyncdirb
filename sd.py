@@ -1,16 +1,8 @@
 #!/usr/bin/env python3
 from ipaddress import IPv4Address
 from random import randint
-from socket import (
-    IPPROTO_TCP,
-    SOL_SOCKET,
-    SO_LINGER,
-    SO_REUSEADDR,
-    TCP_NODELAY,
-    setdefaulttimeout,
-    socket,
-    timeout,
-)
+from socket import IPPROTO_TCP, SOL_SOCKET, SO_LINGER, SO_REUSEADDR, TCP_NODELAY
+from socket import setdefaulttimeout, socket, timeout
 from struct import pack
 from threading import Event, Thread
 
