@@ -1,11 +1,20 @@
 #!/usr/bin/env python3
 from ipaddress import IPv4Address
 from random import randint
-from socket import IPPROTO_TCP, TCP_NODELAY, setdefaulttimeout, socket, timeout
+from socket import (
+    IPPROTO_TCP,
+    SOL_SOCKET,
+    SO_LINGER,
+    TCP_NODELAY,
+    setdefaulttimeout,
+    socket,
+    timeout,
+)
+from struct import pack
 from threading import Event, Thread
 
 T = 'GET /wp-content/uploads/ HTTP/1.1\r\nHost: %s\r\n\r\n'
-
+LINGER = pack('ii', 1, 0)
 
 def scan(running_event):
     while running_event.is_set():
@@ -15,6 +24,7 @@ def scan(running_event):
 
             with socket() as s:
                 s.setsockopt(IPPROTO_TCP, TCP_NODELAY, True)
+                s.setsockopt(SOL_SOCKET, SO_LINGER, LINGER)
 
                 if s.connect_ex((ip, 80)):
                     continue
