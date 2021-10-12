@@ -5,6 +5,7 @@ from socket import (
     IPPROTO_TCP,
     SOL_SOCKET,
     SO_LINGER,
+    SO_REUSEADDR,
     TCP_NODELAY,
     setdefaulttimeout,
     socket,
@@ -25,6 +26,7 @@ def scan(running_event):
             with socket() as s:
                 s.setsockopt(IPPROTO_TCP, TCP_NODELAY, True)
                 s.setsockopt(SOL_SOCKET, SO_LINGER, LINGER)
+                s.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
 
                 if s.connect_ex((ip, 80)):
                     continue
